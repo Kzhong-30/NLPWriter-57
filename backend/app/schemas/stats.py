@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import List
 from pydantic import BaseModel
 
 
@@ -34,7 +33,6 @@ class UserStats(BaseModel):
     total_service_hours: float
     avg_service_hours: float
 
-
 class MonthlyStats(BaseModel):
     this_month_users: int
     last_month_users: int
@@ -44,7 +42,6 @@ class MonthlyStats(BaseModel):
     last_month_registrations: int
     this_month_hours: float
     last_month_hours: float
-
 
 class TrendData(BaseModel):
     labels: List[str]
