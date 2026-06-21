@@ -1,3 +1,58 @@
+'''
+统计模块 Schema 字段一致性校验脚本
+====================================
+
+脚本用途
+--------
+本脚本用于验证后端统计模块的 6 个 API 接口实际返回的 JSON 字段集合，
+与 app/schemas/stats.py 中对应 Pydantic Schema 类的字段集合完全一致。
+通过对称差集比对自动识别：
+  - API 返回了 Schema 中未定义的多余字段
+  - Schema 定义了但 API 未返回的缺失字段
+  - 嵌套对象（StatsResponse）字段也会递归校验
+
+依赖库
+------
+- requests     发送 HTTP 请求调用后端 API
+- pydantic     读取 Schema 类的 model_fields 定义
+- FastAPI app  通过 app.schemas.stats 模块导入各 Schema 类
+
+登录配置
+--------
+脚本内置管理员账号登录，登录成功后获取 Bearer Token 用于后续接口鉴权：
+  - 登录地址 : http://localhost:8000/api/v1/auth/login
+  - 用户名   : admin@example.com
+  - 密码     : admin123
+  - 传参方式 : application/x-www-form-urlencoded
+
+运行命令
+--------
+  cd backend
+  python3 validate_stats_schemas.py
+
+注意：执行前请确保后端 uvicorn 服务已启动并监听 8000 端口。
+
+退出码含义
+----------
+  0   全部接口与 Schema 字段完全一致，校验通过
+  1   至少存在一处字段不匹配或接口请求失败，校验不通过
+
+接口与 Schema 类映射关系表
+--------------------------
+  接口路径                  Schema 类名         校验内容
+  ------------------------  ------------------  --------------------------------
+  /stats/dashboard          DashboardStats       顶层 8 个统计字段
+  /stats/activities         ActivityStats        顶层 6 个活动状态计数
+  /stats/users              UserStats            顶层 9 个用户角色/状态统计
+  /stats/monthly            MonthlyStats         顶层 8 个月环比字段
+  /stats/trend/6            TrendData            顶层 4 个趋势数组字段
+  /stats/all                StatsResponse        顶层 4 个嵌套对象 + 递归校验
+                                                   - dashboard (DashboardStats)
+                                                   - activities (ActivityStats)
+                                                   - users (UserStats)
+                                                   - monthly (MonthlyStats)
+'''
+
 import sys
 import requests
 from app.schemas.stats import (
