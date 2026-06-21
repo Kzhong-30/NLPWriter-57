@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from pydantic import BaseModel
 
 
@@ -15,42 +15,46 @@ class DashboardStats(BaseModel):
 
 
 class ActivityStats(BaseModel):
-    activity_id: int
-    activity_title: str
-    total_registrations: int
-    approved_registrations: int
-    total_check_ins: int
-    total_service_hours: float
-    avg_rating: Optional[float] = None
+    total: int
+    draft: int
+    published: int
+    ongoing: int
+    completed: int
+    cancelled: int
 
 
 class UserStats(BaseModel):
-    user_id: int
-    user_name: str
-    total_activities: int
-    total_check_ins: int
+    total: int
+    pending: int
+    approved: int
+    rejected: int
+    volunteers: int
+    organizers: int
+    admins: int
     total_service_hours: float
-    total_points: int
-    total_certificates: int
+    avg_service_hours: float
 
 
 class MonthlyStats(BaseModel):
-    month: str
-    year: int
-    new_users: int
-    new_activities: int
-    total_registrations: int
-    total_service_hours: float
+    this_month_users: int
+    last_month_users: int
+    this_month_activities: int
+    last_month_activities: int
+    this_month_registrations: int
+    last_month_registrations: int
+    this_month_hours: float
+    last_month_hours: float
 
 
 class TrendData(BaseModel):
-    labels: list
-    values: list
+    labels: List[str]
+    new_users: List[int]
+    new_activities: List[int]
+    service_hours: List[float]
 
 
 class StatsResponse(BaseModel):
     dashboard: DashboardStats
-    activities: list
-    recent_users: list
-    monthly_trend: TrendData
-    category_distribution: Dict[str, int]
+    activities: ActivityStats
+    users: UserStats
+    monthly: MonthlyStats
