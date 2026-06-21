@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.user import User, UserRole
 from app.models.community import Story, ActivityPhoto
-from app.schemas import StoryCreate, StoryUpdate, Story as StorySchema, StoryWithDetails, ActivityPhotoCreate, ActivityPhoto as ActivityPhotoSchema
+from app.schemas.community import StoryCreate, StoryUpdate, Story as StorySchema, StoryWithDetails, ActivityPhotoCreate, ActivityPhoto as ActivityPhotoSchema
+from app.schemas.user import User as UserSchema
 from app.services import (
     get_current_active_user,
     get_current_organizer,
@@ -35,7 +36,7 @@ def read_my_stories(
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
     stories = db.query(Story).filter(
-        Story.user_id == current_user.id,
+        Story.author_id == current_user.id,
     ).order_by(Story.created_at.desc()).offset(skip).limit(limit).all()
     return stories
 
@@ -68,11 +69,11 @@ def create_story(
                 detail="Activity not found",
             )
     db_story = Story(
-        user_id=current_user.id,
+        author_id=current_user.id,
         activity_id=story_in.activity_id,
         title=story_in.title,
         content=story_in.content,
-        images=story_in.images,
+        cover_image=story_in.cover_image,
     )
     db.add(db_story)
     db.commit()
@@ -93,7 +94,7 @@ def update_story(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Story not found",
         )
-    if story.user_id != current_user.id and current_user.role != UserRole.ADMIN:
+    if story.author_id != current_user.id and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
@@ -135,7 +136,7 @@ def delete_story(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Story not found",
         )
-    if story.user_id != current_user.id and current_user.role != UserRole.ADMIN:
+    if story.author_id != current_user.id and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
@@ -163,15 +164,16 @@ def upload_photo(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
-    activity = get_activity(db, activity_id=photo_in.activity_id)
-    if not activity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity not found",
-        )
+    if photo_in.activity_id:
+        activity = get_activity(db, activity_id=photo_in.activity_id)
+        if not activity:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Activity not found",
+            )
     db_photo = ActivityPhoto(
         activity_id=photo_in.activity_id,
-        user_id=current_user.id,
+        uploaded_by=current_user.id,
         image_url=photo_in.image_url,
         description=photo_in.description,
     )
@@ -211,10 +213,24 @@ def delete_photo(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Photo not found",
         )
-    if photo.user_id != current_user.id and current_user.role != UserRole.ADMIN:
+    if photo.uploaded_by != current_user.id and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
         )
     db.delete(photo)
     db.commit()
+
+
+@router.get("/volunteers/featured", response_model=List[UserSchema])
+def get_featured_volunteers(
+    skip: int = 0,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+) -> Any:
+    volunteers = db.query(User).filter(
+        User.role == UserRole.VOLUNTEER.value,
+        User.status == "approved",
+        User.is_active == True,
+    ).order_by(User.total_hours.desc()).offset(skip).limit(limit).all()
+    return volunteers

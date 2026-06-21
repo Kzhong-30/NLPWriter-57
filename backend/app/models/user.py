@@ -44,3 +44,4 @@ class User(Base):
     check_ins = relationship("CheckIn", back_populates="user")
     certificates = relationship("Certificate", back_populates="user", foreign_keys="Certificate.user_id")
     point_transactions = relationship("PointTransaction", back_populates="user")
+    stories = relationship("Story", back_populates="author")

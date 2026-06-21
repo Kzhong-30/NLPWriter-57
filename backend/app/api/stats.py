@@ -9,7 +9,8 @@ from app.models.activity import Activity, ActivityStatus
 from app.models.registration import Registration, RegistrationStatus
 from app.models.checkin import CheckIn, CheckInStatus
 from app.models.certificate import Certificate
-#from app.models.community import Story, ActivityPhoto
+from app.models.points import PointTransaction, TransactionType
+# from app.models.community import Story, ActivityPhoto  # 暂时注释，未在统计接口中使用
 from app.schemas.stats import DashboardStats, ActivityStats, UserStats, StatsResponse, MonthlyStats, TrendData
 from app.services import get_current_admin
 
@@ -24,19 +25,21 @@ def get_dashboard_stats(
     total_users = db.query(func.count(User.id)).scalar() or 0
     total_activities = db.query(func.count(Activity.id)).scalar() or 0
     total_registrations = db.query(func.count(Registration.id)).scalar() or 0
+    total_check_ins = db.query(func.count(CheckIn.id)).scalar() or 0
     total_certificates = db.query(func.count(Certificate.id)).scalar() or 0
     total_hours = db.query(func.sum(CheckIn.service_hours)).scalar() or 0
-    pending_users = db.query(func.count(User.id)).filter(User.status == UserStatus.PENDING).scalar() or 0
-    active_activities = db.query(func.count(Activity.id)).filter(Activity.status == ActivityStatus.ONGOING).scalar() or 0
+    total_points = db.query(func.sum(PointTransaction.points)).filter(
+        PointTransaction.type == TransactionType.EARN.value
+    ).scalar() or 0
     pending_registrations = db.query(func.count(Registration.id)).filter(Registration.status == RegistrationStatus.PENDING).scalar() or 0
     return DashboardStats(
         total_users=total_users,
         total_activities=total_activities,
         total_registrations=total_registrations,
+        total_check_ins=total_check_ins,
         total_certificates=total_certificates,
         total_service_hours=float(total_hours),
-        pending_users=pending_users,
-        active_activities=active_activities,
+        total_points_earned=int(total_points),
         pending_registrations=pending_registrations,
     )
 

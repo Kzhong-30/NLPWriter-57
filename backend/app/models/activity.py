@@ -43,3 +43,4 @@ class Activity(Base):
     
     registrations = relationship("Registration", back_populates="activity")
     check_ins = relationship("CheckIn", back_populates="activity")
+    photos = relationship("ActivityPhoto", back_populates="activity")

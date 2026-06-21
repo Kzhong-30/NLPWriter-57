@@ -66,14 +66,14 @@ class StoryLike(BaseModel):
 
 
 class ActivityPhotoCreate(BaseModel):
-    activity_id: int
+    activity_id: Optional[int] = None
     image_url: str = Field(..., max_length=500)
     description: Optional[str] = Field(None, max_length=500)
 
 
 class ActivityPhotoInDB(BaseModel):
     id: int
-    activity_id: int
+    activity_id: Optional[int] = None
     uploaded_by: Optional[int] = None
     image_url: str
     description: Optional[str] = None
